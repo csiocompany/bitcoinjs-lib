@@ -152,4 +152,5 @@ function p2pkh(a, opts) {
   }
   return Object.assign(o, a);
 }
+
 exports.p2pkh = p2pkh;
