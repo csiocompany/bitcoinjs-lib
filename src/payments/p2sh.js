@@ -44,8 +44,16 @@ function p2sh(a, opts) {
   const o = { network };
   const _address = lazy.value(() => {
     const payload = bs58check.decode(a.address);
-    const version = payload.readUInt8(0);
-    const hash = payload.slice(1);
+	
+	/*const version = payload.readUInt8(0);
+    const hash = payload.slice(1);*/
+	
+	//ZCash
+	var multibyte = payload.length === 22
+	var offset = multibyte ? 2 : 1
+	var version = multibyte ? payload.readUInt16BE(0) : payload[0]
+	var hash = payload.slice(offset)
+	
     return { version, hash };
   });
   const _chunks = lazy.value(() => {
@@ -63,9 +71,19 @@ function p2sh(a, opts) {
   // output dependents
   lazy.prop(o, 'address', () => {
     if (!o.hash) return;
-    const payload = Buffer.allocUnsafe(21);
+	
+    /*const payload = Buffer.allocUnsafe(21);
     payload.writeUInt8(o.network.scriptHash, 0);
-    o.hash.copy(payload, 1);
+    o.hash.copy(payload, 1);*/
+	
+	// ZCash
+	var multibyte = network.scriptHash > 0xff
+	var size = multibyte ? 22 : 21
+	var offset = multibyte ? 2 : 1
+	const payload = Buffer.allocUnsafe(size);
+	multibyte ? payload.writeUInt16BE(o.network.scriptHash, 0) : payload.writeUInt8(o.network.scriptHash, 0)
+	o.hash.copy(payload, offset);
+    
     return bs58check.encode(payload);
   });
   lazy.prop(o, 'hash', () => {
@@ -92,11 +110,6 @@ function p2sh(a, opts) {
   lazy.prop(o, 'witness', () => {
     if (o.redeem && o.redeem.witness) return o.redeem.witness;
     if (o.input) return [];
-  });
-  lazy.prop(o, 'name', () => {
-    const nameParts = ['p2sh'];
-    if (o.redeem !== undefined) nameParts.push(o.redeem.name);
-    return nameParts.join('-');
   });
   if (opts.validate) {
     let hash = Buffer.from([]);
