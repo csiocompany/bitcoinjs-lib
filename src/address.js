@@ -10,10 +10,22 @@ const typeforce = require('typeforce');
 function fromBase58Check(address) {
   const payload = bs58check.decode(address);
   // TODO: 4.0.0, move to "toOutputScript"
+  
   if (payload.length < 21) throw new TypeError(address + ' is too short');
-  if (payload.length > 21) throw new TypeError(address + ' is too long');
-  const version = payload.readUInt8(0);
-  const hash = payload.slice(1);
+  //if (payload.length > 21) throw new TypeError(address + ' is too long');
+  
+  // ZCash
+  if (payload.length > 22) throw new TypeError(address + ' is too long');
+  
+  /*const version = payload.readUInt8(0);
+  const hash = payload.slice(1);*/
+  
+  // Zcash
+  var multibyte = payload.length === 22
+  var offset = multibyte ? 2 : 1
+  var version = multibyte ? payload.readUInt16BE(0) : payload[0]
+  var hash = payload.slice(offset)
+  
   return { version, hash };
 }
 exports.fromBase58Check = fromBase58Check;
@@ -29,9 +41,19 @@ function fromBech32(address) {
 exports.fromBech32 = fromBech32;
 function toBase58Check(hash, version) {
   typeforce(types.tuple(types.Hash160bit, types.UInt8), arguments);
-  const payload = Buffer.allocUnsafe(21);
+  
+  /*const payload = Buffer.allocUnsafe(21);
   payload.writeUInt8(version, 0);
-  hash.copy(payload, 1);
+  hash.copy(payload, 1);*/
+  
+  // ZCash
+  var multibyte = version > 0xff
+  var size = multibyte ? 22 : 21
+  var offset = multibyte ? 2 : 1
+  const payload = Buffer.allocUnsafe(size);
+  multibyte ? payload.writeUInt16BE(version, 0) : payload.writeUInt8(version, 0)
+  hash.copy(payload, offset);
+  
   return bs58check.encode(payload);
 }
 exports.toBase58Check = toBase58Check;
