@@ -110,4 +110,5 @@ function toOutputScript(address, network) {
   }
   throw new Error(address + ' has no matching Script');
 }
+
 exports.toOutputScript = toOutputScript;
