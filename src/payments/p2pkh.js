@@ -28,20 +28,43 @@ function p2pkh(a, opts) {
   );
   const _address = lazy.value(() => {
     const payload = bs58check.decode(a.address);
-    const version = payload.readUInt8(0);
-    const hash = payload.slice(1);
+	
+	/*const version = payload.readUInt8(0);
+    const hash = payload.slice(1);*/
+	
+	//ZCash
+	var multibyte = payload.length === 22
+	var offset = multibyte ? 2 : 1
+	var version = multibyte ? payload.readUInt16BE(0) : payload[0]
+	var hash = payload.slice(offset)
+	
     return { version, hash };
   });
   const _chunks = lazy.value(() => {
     return bscript.decompile(a.input);
   });
   const network = a.network || networks_1.bitcoin;
-  const o = { name: 'p2pkh', network };
+  const o = { network };
   lazy.prop(o, 'address', () => {
     if (!o.hash) return;
-    const payload = Buffer.allocUnsafe(21);
+	
+    /*const payload = Buffer.allocUnsafe(21);
     payload.writeUInt8(network.pubKeyHash, 0);
-    o.hash.copy(payload, 1);
+    o.hash.copy(payload, 1);*/
+	
+	// ZCash
+	let payload;
+	if (network.pubKeyHash > 255) {
+		payload = Buffer.allocUnsafe(22);
+		payload.writeUInt16BE(network.pubKeyHash, 0)
+		o.hash.copy(payload, 2);
+	}
+	else {
+		payload = Buffer.allocUnsafe(21);
+		payload.writeUInt8(network.pubKeyHash, 0);
+		o.hash.copy(payload, 1);
+	}
+		
     return bs58check.encode(payload);
   });
   lazy.prop(o, 'hash', () => {
