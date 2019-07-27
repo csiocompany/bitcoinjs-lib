@@ -53,17 +53,12 @@ function p2pkh(a, opts) {
     o.hash.copy(payload, 1);*/
 	
 	// ZCash
-	let payload;
-	if (network.pubKeyHash > 255) {
-		payload = Buffer.allocUnsafe(22);
-		payload.writeUInt16BE(network.pubKeyHash, 0)
-		o.hash.copy(payload, 2);
-	}
-	else {
-		payload = Buffer.allocUnsafe(21);
-		payload.writeUInt8(network.pubKeyHash, 0);
-		o.hash.copy(payload, 1);
-	}
+	var multibyte = network.pubKeyHash > 0xff
+	var size = multibyte ? 22 : 21
+	var offset = multibyte ? 2 : 1
+	const payload = Buffer.allocUnsafe(size);
+	multibyte ? payload.writeUInt16BE(network.pubKeyHash, 0) : payload.writeUInt8(network.pubKeyHash, 0)
+	o.hash.copy(payload, offset);
 		
     return bs58check.encode(payload);
   });
